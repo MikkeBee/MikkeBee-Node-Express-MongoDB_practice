@@ -1,7 +1,8 @@
 const express = require('express');
-
 const morgan = require('morgan');
 
+const AppError = require('./utils/appError');
+const globalErrorHander = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 
@@ -13,11 +14,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 app.use(express.json());
 app.use(express.static(`${__dirname}/public`));
-
-app.use((req, res, next) => {
-  console.log('Hello from the middleware');
-  next();
-});
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
@@ -54,22 +50,14 @@ app.all('*', (req, res, next) => {
   //   message: `Can't find ${req.originalUrl} on this server!`,
   // });
 
-  const err = new Error(`Can't find ${req.originalUrl} on this server!`);
-  err.status = 'fail';
-  err.statusCode = 404;
+  // const err = new Error(`Can't find ${req.originalUrl} on this server!`);
+  // err.status = 'fail';
+  // err.statusCode = 404;
 
   //when something is passed into next it will assume that it is an error
-  next(err);
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
-app.use((err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
-  });
-});
+app.use(globalErrorHander);
 
 module.exports = app;
